@@ -2,7 +2,7 @@
 Announcements endpoints for the High School Management System API
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 from pydantic import BaseModel
@@ -79,6 +79,7 @@ def get_all_announcements(teacher_username: str) -> List[Dict[str, Any]]:
     return announcements
 
 @router.post("", response_model=Dict[str, Any])
+@router.post("/", response_model=Dict[str, Any])
 def create_announcement(announcement: AnnouncementCreate, teacher_username: str) -> Dict[str, Any]:
     """
     Create a new announcement (requires authentication)
@@ -88,15 +89,19 @@ def create_announcement(announcement: AnnouncementCreate, teacher_username: str)
     # Validate dates
     try:
         exp_date = datetime.fromisoformat(announcement.expiration_date.replace('Z', '+00:00'))
-        if exp_date <= datetime.now(timezone.utc):
-            raise HTTPException(status_code=400, detail="Expiration date must be in the future")
-        
-        if announcement.start_date:
-            start_date = datetime.fromisoformat(announcement.start_date.replace('Z', '+00:00'))
-            if start_date >= exp_date:
-                raise HTTPException(status_code=400, detail="Start date must be before expiration date")
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use ISO format (e.g., 2026-01-31T23:59:59Z)")
+
+    if exp_date <= datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Expiration date must be in the future")
+
+    if announcement.start_date:
+        try:
+            start_date = datetime.fromisoformat(announcement.start_date.replace('Z', '+00:00'))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use ISO format (e.g., 2026-01-31T23:59:59Z)")
+        if start_date >= exp_date:
+            raise HTTPException(status_code=400, detail="Start date must be before expiration date")
     
     doc = {
         "message": announcement.message,

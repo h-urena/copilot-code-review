@@ -161,7 +161,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (currentUser) {
       loginButton.classList.add("hidden");
       userInfo.classList.remove("hidden");
-      manageAnnouncementsButton.classList.remove("hidden");
+
+      // Only show the manage announcements button for teacher users
+      const isTeacher =
+        currentUser.role === "teacher" || currentUser.is_teacher === true;
+
+      if (isTeacher) {
+        manageAnnouncementsButton.classList.remove("hidden");
+      } else {
+        manageAnnouncementsButton.classList.add("hidden");
+      }
       displayName.textContent = currentUser.display_name;
     } else {
       loginButton.classList.remove("hidden");
@@ -292,15 +301,44 @@ document.addEventListener("DOMContentLoaded", () => {
         const startDate = announcement.start_date ? new Date(announcement.start_date).toLocaleString() : "Not set";
         const expDate = new Date(announcement.expiration_date).toLocaleString();
         
-        item.innerHTML = `
-          <h3>${announcement.message}</h3>
-          <p><strong>Start Date:</strong> ${startDate}</p>
-          <p><strong>Expiration Date:</strong> ${expDate}</p>
-          <div class="announcement-actions">
-            <button class="edit-button" data-id="${announcement.id}">Edit</button>
-            <button class="delete-button" data-id="${announcement.id}">Delete</button>
-          </div>
-        `;
+        // Title
+        const title = document.createElement("h3");
+        title.textContent = announcement.message;
+        item.appendChild(title);
+
+        // Start date
+        const startParagraph = document.createElement("p");
+        const startLabel = document.createElement("strong");
+        startLabel.textContent = "Start Date:";
+        startParagraph.appendChild(startLabel);
+        startParagraph.appendChild(document.createTextNode(" " + startDate));
+        item.appendChild(startParagraph);
+
+        // Expiration date
+        const expParagraph = document.createElement("p");
+        const expLabel = document.createElement("strong");
+        expLabel.textContent = "Expiration Date:";
+        expParagraph.appendChild(expLabel);
+        expParagraph.appendChild(document.createTextNode(" " + expDate));
+        item.appendChild(expParagraph);
+
+        // Actions
+        const actionsDiv = document.createElement("div");
+        actionsDiv.className = "announcement-actions";
+
+        const editButton = document.createElement("button");
+        editButton.className = "edit-button";
+        editButton.dataset.id = String(announcement.id);
+        editButton.textContent = "Edit";
+        actionsDiv.appendChild(editButton);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "delete-button";
+        deleteButton.dataset.id = String(announcement.id);
+        deleteButton.textContent = "Delete";
+        actionsDiv.appendChild(deleteButton);
+
+        item.appendChild(actionsDiv);
         
         announcementsList.appendChild(item);
       });
@@ -385,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
     
     if (!currentUser) return;
     
-    const formData = new FormData(announcementForm);
+
     const message = announcementMessage.value.trim();
     const startDate = announcementStartDate.value;
     const expirationDate = announcementExpirationDate.value;
